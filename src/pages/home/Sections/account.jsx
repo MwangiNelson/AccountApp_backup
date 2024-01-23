@@ -58,7 +58,7 @@ const AccountPage = () => {
 
         handleTransfer()
 
-        const newBalance = currentAmount + depositAMt
+        const newBalance = currentAmount + parseInt(depositAMt)
 
         updateBank(newBalance)
         toast('Deposit successful')

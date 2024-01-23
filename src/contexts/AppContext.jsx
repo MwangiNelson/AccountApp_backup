@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { deleteUser, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Slide, toast } from 'react-toastify';
 
@@ -75,9 +75,24 @@ export const AppProvider = ({ children }) => {
             await createUserDocument(user.uid, { email, bankAccount: { accountNumber: "default", balance: 0.0 } });
             setUserData(user.uid);
 
+            const userDocument = await getUserDocument(user.uid);
+            setUserFinances(userDocument)
+
             return response.user;
         } catch (error) {
             // Handle errors
+
+            if (error.code === 'auth/email-already-in-use') {
+                // Display a toast for email already in use
+                toast('Email is already in use. Please use a different email.');
+            } else if (error.code === 'auth/weak-password') {
+                // Display a toast for weak password
+                toast('Weak password. Please use a stronger password.');
+            } else {
+                // Display a generic error toast for other errors
+                toast('Signup failed. Please try again later.');
+            }
+
             console.error("Signup failed: ", error);
             toastMessage('Sign Up failed')
             throw error;
@@ -102,7 +117,21 @@ export const AppProvider = ({ children }) => {
 
             return response.user;
         } catch (error) {
-            // Handle errors
+            // Handle Firebase authentication errors
+            if (error.code === 'auth/user-not-found') {
+                // Display a toast for user not found
+                toast('User not found. Please check your email and password.');
+            } else if (error.code === 'auth/wrong-password') {
+                // Display a toast for incorrect password
+                toast('Incorrect password. Please try again.');
+            } else if (error.code === 'auth/invalid-credential') {
+                toast('Invalid credentials. Try creating an account');
+
+            } else {
+                // Display a generic error toast for other errors
+                toast('Login failed. Please try again later.');
+            }
+
             console.error("Login failed: ", error);
             throw error;
         }
@@ -157,28 +186,31 @@ export const AppProvider = ({ children }) => {
 
 
     const updateEmail = async (newEmail) => {
-        try {
-            await updateEmail(auth.currentUser, newEmail);
+        const currentUser = auth.currentUser;
 
-            toast('Email updated successfully');
-        } catch (error) {
-            console.error('Error updating email:', error);
-            toast('Error updating email');
-
+        if (currentUser.email !== newEmail) {
+            try {
+                await currentUser.updateEmail(newEmail);
+                toast('Email updated successfully');
+            } catch (error) {
+                console.error('Error updating email:', error);
+                toast('Error updating email');
+            }
+        } else {
+            // Email is the same, no need to update
+            toast('Email is already up to date');
         }
     };
 
     const updatePassword = async (newPassword) => {
 
-        console.log(auth.currentUser)
-        try {
-            await updatePassword(auth.currentUser, newPassword);
-    
+        await updatePassword(auth.currentUser, newPassword).then(() => {
             toast('Password updated successfully');
-        } catch (error) {
+        }).catch((error) => {
             console.error('Error updating password:', error);
             toast('Error updating password');
-        }
+        })
+
     };
 
 
@@ -190,6 +222,18 @@ export const AppProvider = ({ children }) => {
         window.location.href = '/';
     }
 
+    const deleteAccount = () => {
+
+        deleteUser(auth.currentUser).then(() => {
+            // User deleted.
+            toast('Account DELETED')
+            logout()
+
+        }).catch((error) => {
+            // An error ocurred
+            // ...
+        });
+    }
     const contextValue = {
         userData,
         login,
@@ -201,7 +245,8 @@ export const AppProvider = ({ children }) => {
         transactions,
         setTransactions,
         updateEmail,
-        updatePassword
+        updatePassword,
+        deleteAccount
     };
 
     return (
