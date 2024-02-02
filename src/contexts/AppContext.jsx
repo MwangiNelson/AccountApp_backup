@@ -83,13 +83,11 @@ export const AppProvider = ({ children }) => {
             // Handle errors
 
             if (error.code === 'auth/email-already-in-use') {
-                // Display a toast for email already in use
+              
                 toast('Email is already in use. Please use a different email.');
             } else if (error.code === 'auth/weak-password') {
-                // Display a toast for weak password
                 toast('Weak password. Please use a stronger password.');
             } else {
-                // Display a generic error toast for other errors
                 toast('Signup failed. Please try again later.');
             }
 
@@ -102,18 +100,16 @@ export const AppProvider = ({ children }) => {
     async function login(email, password) {
         try {
             const response = await signInWithEmailAndPassword(auth, email, password);
-            // Handle successful login
             let user = response.user
             const token = await user.getIdToken();
-            console.log("JWT:", token)
 
+            console.log("JWT:", token)
             setUserData(user.uid);
 
             const userDocument = await getUserDocument(user.uid);
             console.log("User Data:", userDocument);
 
             setUserFinances(userDocument)
-            // console.log(response.user)
 
             return response.user;
         } catch (error) {

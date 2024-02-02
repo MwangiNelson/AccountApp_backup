@@ -21,7 +21,7 @@ const Login = () => {
 
     return (
         <div className="flex flex-col w-full justify-center items-center py-10 gap-5 rounded border bg-gray-100">
-            <h3>Login</h3>
+            <h3 className='text-4xl font-bold'>Login</h3>
 
             <form
             onSubmit={handleLogin}
